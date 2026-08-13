@@ -16,9 +16,9 @@ from minescript import EventQueue, EventType
 from config_lib import Config
 from rotation import look, look_at as look_at_pos
 
-# --- GLOBALE EVENTS ---
+# --- GLOBAL EVENTS ---
 pause_event = threading.Event()
-pause_event.set()  # Startet auf "Grün" (läuft normal)
+pause_event.set()  # Starts as "Green" (running normally)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Config loading
@@ -36,7 +36,7 @@ VACUUM_RADIUS     = float(_cfg.get("vacuum_radius",    14.0))
 AUTO_KILL_ON_PATH = bool(_cfg.get("auto_kill_on_path", True))
 AUTO_VERIFY_TAB   = bool(_cfg.get("auto_verify_tab",  True))
 FARMS_CFG: dict   = _cfg.get("farms", {})
-ACTIVE_CROP_CFG   = str(_cfg.get("active_crop", "")).strip()   # NEU: manuelle Crop-Auswahl
+ACTIVE_CROP_CFG   = str(_cfg.get("active_crop", "")).strip()   # NEW: manual crop selection
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Message helpers
@@ -92,7 +92,7 @@ add_event_listener("render", frame)
     set_beacon = _beacon_script.get("set_beacon")
     clear_beacon = _beacon_script.get("clear_beacon")
 except Exception as e:
-    print(f"[FarmAuto] WARNUNG: Java-Bridge/Gizmos Import fehlgeschlagen: {e}")  # NEU: sichtbar statt still
+    print(f"[FarmAuto] WARNUNG: Java-Bridge/Gizmos Import fehlgeschlagen: {e}")  # NEW: visible instead of silent
     Minecraft = None
     mc = None
     Gizmos = None
@@ -118,7 +118,7 @@ for _crop, _data in FARMS_CFG.items():
 
 WAYPOINT_RADIUS_SQ = 3.0 ** 2
 
-# NEU: Manuelle Crop-Auswahl (überschreibt Auto-Erkennung wenn gesetzt & gültig)
+# NEW: Manual crop selection (overrides auto-detection when set & valid)
 SELECTED_CROP: str | None = ACTIVE_CROP_CFG if ACTIVE_CROP_CFG in WAYPOINTS else None
 if ACTIVE_CROP_CFG and SELECTED_CROP is None:
     print(f"[FarmAuto] WARNUNG: active_crop '{ACTIVE_CROP_CFG}' existiert nicht in farms config. Nutze Auto-Erkennung.")
@@ -294,6 +294,7 @@ def warp_garden() -> None:
     time.sleep(0.1)
     minescript.player_press_sneak(False)
 
+# Distance helpers
 def _dist_sq(p1, p2) -> float: return (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2 + (p1[2] - p2[2]) ** 2
 def get_distance(p1, p2) -> float: return math.sqrt(_dist_sq(p1, p2))
 
@@ -373,7 +374,7 @@ def check_and_kill_pests(yaw_origin: float, pitch_origin: float, stop_event: thr
     return True
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Pest Hunter 3D 
+# Pest Hunter 3D
 # ─────────────────────────────────────────────────────────────────────────────
 def ascend_to_79(stop_event: threading.Event) -> None:
     try:
@@ -602,7 +603,7 @@ def action_hunt_pests(stop_event: threading.Event, known_total: str | None = Non
 def Maps_waypoints(yaw: float, pitch: float, waypoint_list: list, stop_event: threading.Event, infinite_loop: bool = False, pest_spawn_event: threading.Event = None, start_index: int = 1, next_rod_cast_time: float = 0.0) -> tuple[int, float]:
     minescript.player_inventory_select_slot(HOE_SLOT)
     minescript.player_press_attack(True)
-    
+
     i = start_index
 
     rad = math.radians(yaw)
@@ -631,21 +632,21 @@ def Maps_waypoints(yaw: float, pitch: float, waypoint_list: list, stop_event: th
             while not stop_event.is_set():
                 
                 # ============================================================
-                # PAUSE-LOGIK HIER SAUBER EINGEFÜGT
+                # PAUSE LOGIC CLEANLY INSERTED HERE
                 # ============================================================
                 if not pause_event.is_set():
-                    # 1. Alles loslassen
+                    # 1. Release all controls
                     minescript.player_press_attack(False)
                     release_all_keys()
                     
-                    # 2. Den Thread hier blockieren/einfrieren (0% CPU)
+                    # 2. Block/freeze this thread (0% CPU)
                     pause_event.wait()
                     
-                    # 3. Falls während der Pause auf Stop (F7) gedrückt wurde:
+                    # 3. If Stop (F7) was pressed during pause:
                     if stop_event.is_set():
                         break
                         
-                    # 4. Nach dem Pausen-Ende wieder Werkzeug nehmen und weiter ausrichten
+                    # 4. After pause ends, re-equip tool and reorient
                     look(yaw, pitch)
                     minescript.player_inventory_select_slot(HOE_SLOT)
                     minescript.player_press_attack(True)
@@ -694,11 +695,11 @@ def Maps_waypoints(yaw: float, pitch: float, waypoint_list: list, stop_event: th
                     break 
                 
                 fwd_val = dx * fx + dz * fz
-                right_val = dx * rx + dz * rz  # nur noch zur Referenz, wird nicht mehr für Tasten genutzt
+                right_val = dx * rx + dz * rz  # reference only, no longer used for key presses
                 
                 minescript.player_press_forward(fwd_val > 0.1)
-                minescript.player_press_backward(fwd_val < -0.1)  # NEU: S statt D für "rückwärts" relativ zur Blickrichtung
-                minescript.player_press_right(False)              # NEU: D deaktiviert
+                minescript.player_press_backward(fwd_val < -0.1)  # NEW: use S instead of D for "backward" relative to view direction
+                minescript.player_press_right(False)              # NEW: disable D
                 minescript.player_press_left(False)
                 
                 time.sleep(LOOP_SLEEP)
@@ -845,13 +846,13 @@ def get_nearest_crop() -> str | None:
 # ─────────────────────────────────────────────────────────────────────────────
 KEY_F7  = 296
 KEY_F8  = 297
-KEY_F6  = 295 # NEU: Crop-Auswahl durchschalten
+KEY_F6  = 295 # NEW: toggle crop selection
 KEY_F9  = 298
 KEY_F10 = 299
-KEY_F12 = 301 # Der glfw KeyCode für F12
+KEY_F12 = 301 # The glfw KeyCode for F12
 
 def main():
-    global SELECTED_CROP  # NEU: muss vor jeder Nutzung der Variable in main() stehen
+    global SELECTED_CROP  # NEW: must be declared before any use of the variable in main()
 
     if not FARMS_CFG:
         msg("§c[FarmAuto] No farms configured! Run §esetup.py §cfirst.")
@@ -886,10 +887,10 @@ def main():
                     if logic_thread and logic_thread.is_alive():
                         msg("§c[Error] Task already running. Press F7 first.")
                     else:
-                        crop_name = SELECTED_CROP or get_nearest_crop()  # NEU: manuelle Auswahl hat Vorrang
+                        crop_name = SELECTED_CROP or get_nearest_crop()  # NEW: manual selection has priority
                         if crop_name:
                             stop_event   = threading.Event()
-                            pause_event.set() # Sicherstellen, dass das Skript unpausiert startet
+                            pause_event.set() # Ensure the script starts unpaused
                             logic_thread = threading.Thread(
                                 target=farm_generic,
                                 args=(crop_name, stop_event),
@@ -900,14 +901,14 @@ def main():
                             msg("§e[Info] Not near any configured waypoint.")
 
                 # ========================================================
-                # F6: CROP-AUSWAHL DURCHSCHALTEN (NEU)
+                # F6: TOGGLE CROP SELECTION (NEW)
                 # ========================================================
                 elif event.key == KEY_F6:
                     if logic_thread and logic_thread.is_alive():
                         msg("§c[Error] Kann Crop nicht wechseln während Bot läuft.")
                     else:
                         crop_list = list(WAYPOINTS.keys())
-                        options = [None] + crop_list  # None = Auto-Erkennung per Position
+                        options = [None] + crop_list  # None = Auto-detection by position
                         current_idx = options.index(SELECTED_CROP) if SELECTED_CROP in options else 0
                         next_idx = (current_idx + 1) % len(options)
                         SELECTED_CROP = options[next_idx]
@@ -921,7 +922,7 @@ def main():
                 # ========================================================
                 elif event.key == KEY_F12:
                     if logic_thread and logic_thread.is_alive():
-                        # Ampel-Logik: Wenn Grün, schlooot. Wenn Rot, schalte auf Grün.
+                        # Traffic-light logic: If Green, pause. If Red, set to Green (resume).
                         if pause_event.is_set():
                             pause_event.clear()
                             msg("§e[FarmAuto] PAUSE AKTIVIERT! (F12 zum Fortsetzen)§r")
@@ -930,7 +931,7 @@ def main():
                                 if p and set_beacon:
                                     set_beacon(p[0], p[1], p[2])
                             except Exception as e:
-                                print(f"[FarmAuto] Beacon-Fehler: {e}")  # NEU: sichtbar statt still
+                                print(f"[FarmAuto] Beacon-Fehler: {e}")  # NEW: visible instead of silent
                         else:
                             pause_event.set()
                             msg("§a[FarmAuto] FORTGESETZT!§r")
@@ -946,8 +947,8 @@ def main():
                         msg("§cStopping current task…")
                         stop_event.set()
                         
-                        # GANZ WICHTIG: Wenn der Bot pausiert war, müssen wir ihn
-                        # aufwecken, damit er den Stop-Befehl ausführen und sich beenden kann!
+                        # VERY IMPORTANT: If the bot was paused, we must wake it
+                        # so it can process the Stop command and shut down!
                         pause_event.set() 
                         
                         if clear_beacon:
@@ -974,7 +975,7 @@ def main():
                         msg("§c[Error] Task already running. Press F7 first.")
                     else:
                         stop_event   = threading.Event()
-                        pause_event.set() # Sicherstellen, dass das Skript unpausiert startet
+                        pause_event.set() # Ensure the script starts unpaused
                         logic_thread = threading.Thread(
                             target=action_hunt_pests,
                             args=(stop_event,),
